@@ -19,7 +19,7 @@
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💳</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" crossorigin="anonymous">
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -225,71 +225,6 @@
                             <i class="fas fa-cloud-upload-alt"></i>
                             <p>Перетащите файл сюда или нажмите для выбора</p>
                             <small>Поддерживаемые форматы: .txt, .csv</small>
-                        </div>
-                    </div>
-                    
-                    <div class="qr-scanner-section">
-                        <div class="scanner-container">
-                            <div class="scanner-header">
-                                <h4><i class="fas fa-qrcode"></i> Сканирование QR/Barcode</h4>
-                                <p>Наведите камеру на QR-код или штрих-код топливной карты</p>
-                                
-                                <div class="mobile-tips" id="mobile-tips" style="display: none;">
-                                    <div class="tip-item">
-                                        <i class="fas fa-lightbulb"></i>
-                                        <span>Обеспечьте хорошее освещение</span>
-                                    </div>
-                                    <div class="tip-item">
-                                        <i class="fas fa-hand-paper"></i>
-                                        <span>Держите устройство стабильно</span>
-                                    </div>
-                                    <div class="tip-item">
-                                        <i class="fas fa-expand-arrows-alt"></i>
-                                        <span>Расстояние 10-30 см от кода</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="scanner-buttons">
-                                <button class="modal-btn secondary-btn" onclick="startQRScanner()" id="qr-start-btn">
-                                    <i class="fas fa-camera"></i>
-                                    <span>Начать сканирование</span>
-                                </button>
-                                
-                                <button class="modal-btn secondary-btn" onclick="stopQRScanner()" id="qr-stop-btn" style="display: none;">
-                                    <i class="fas fa-stop"></i>
-                                    <span>Остановить</span>
-                                </button>
-                                
-                                <button class="modal-btn help-btn" onclick="showCameraHelp()" id="camera-help-btn" title="Помощь с камерой">
-                                    <i class="fas fa-question-circle"></i>
-                                    <span>Помощь</span>
-                                </button>
-                                
-                                <button class="modal-btn force-btn" onclick="forceStartScanner()" id="force-scanner-btn" style="display: none;" title="Принудительный запуск для разработки">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    <span>Принудительно</span>
-                                </button>
-                            </div>
-                            
-                            <div id="qr-reader" class="qr-reader" style="display: none;"></div>
-                            
-                            <div class="scanner-status" id="scanner-status">
-                                <div class="status-indicator offline">
-                                    <i class="fas fa-circle"></i>
-                                    <span>Сканер отключен</span>
-                                </div>
-                            </div>
-                            
-                            <div class="scanner-history" id="scanner-history" style="display: none;">
-                                <div class="scanner-history-header">
-                                    <h5>Последние сканы:</h5>
-                                    <button class="clear-history-btn" onclick="clearScannedItems()" title="Очистить историю">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                                <div class="scanned-items" id="scanned-items"></div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -528,22 +463,6 @@
             </button>
         </div>
         <div class="toast-progress"></div>
-    </div>
-
-    <div id="pwa-banner" class="pwa-banner" style="display: none;">
-        <div class="pwa-content">
-            <div class="pwa-icon">
-                <i class="fas fa-download"></i>
-            </div>
-            <div class="pwa-text">
-                <strong>Установите приложение</strong>
-                <p>Для быстрого доступа с рабочего стола</p>
-            </div>
-            <div class="pwa-actions">
-                <button class="pwa-btn primary" onclick="installPWA()">Установить</button>
-                <button class="pwa-btn secondary" onclick="hidePWABanner()">Позже</button>
-            </div>
-        </div>
     </div>
 
     <script src="script.js"></script>

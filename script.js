@@ -268,6 +268,7 @@ function openModal(action) {
     
     if (modalTitle) modalTitle.textContent = config.title;
     if (cardInput) {
+        cardInput.value = '';
         cardInput.placeholder = config.placeholder;
         cardInput.focus();
     }
@@ -281,13 +282,10 @@ function openModal(action) {
 
 function closeModal() {
     const modal = document.getElementById('modal');
-    const cardInput = document.getElementById('card-input');
-    
     if (modal) {
         modal.style.display = 'none';
-        modal.classList.remove('show');
+        document.body.style.overflow = 'auto';
     }
-    if (cardInput) cardInput.value = '';
 }
 
 
@@ -772,6 +770,29 @@ function showHelp() {
                         123456<br>
                         789012<br>
                         345678
+                    </div>
+                </div>
+                <div class="help-section">
+                    <h3><i class="fas fa-download"></i> Установка приложения</h3>
+                    <p>Установите приложение на рабочий стол для быстрого доступа без браузера.</p>
+                    <div class="pwa-install-section">
+                        <div class="pwa-install-info">
+                            <p><strong>Преимущества установки:</strong></p>
+                            <ul>
+                                <li>Быстрый запуск с рабочего стола</li>
+                                <li>Работа без браузера</li>
+                                <li>Офлайн доступ к функциям</li>
+                                <li>Уведомления о статусе операций</li>
+                            </ul>
+                        </div>
+                        <div class="pwa-install-buttons">
+                            <button class="modal-btn primary-btn" onclick="tryInstallPWA()" id="install-pwa-btn">
+                                <i class="fas fa-download"></i> Установить приложение
+                            </button>
+                            <div class="install-instructions" id="install-instructions" style="display: none;">
+                                <p><small>Для установки используйте меню браузера: "Установить приложение" или "Добавить на главный экран"</small></p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1546,10 +1567,7 @@ function checkPWAInstall() {
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        const pwaBanner = document.getElementById('pwa-banner');
-        if (pwaBanner) {
-            pwaBanner.style.display = 'flex';
-        }
+        console.log('PWA installation prompt available');
     });
     
     window.installPWA = async function() {
@@ -1560,7 +1578,8 @@ function checkPWAInstall() {
                 showNotification('Приложение установлено!', 'success');
             }
             deferredPrompt = null;
-            hidePWABanner();
+        } else {
+            showNotification('Для установки используйте меню браузера', 'info');
         }
     };
 }
@@ -1572,524 +1591,30 @@ function hidePWABanner() {
     }
 }
 
-let qrScanner = null;
-let isScanning = false;
-let scannedItems = [];
-
-function checkCameraSupport() {
-    const isSecureContext = window.isSecureContext || 
-                           location.protocol === 'https:' || 
-                           location.hostname === 'localhost' || 
-                           location.hostname === '127.0.0.1' ||
-                           location.hostname === '0.0.0.0' ||
-                           location.hostname.endsWith('.local') ||
-                           location.hostname.includes('192.168.') ||
-                           location.hostname.includes('10.0.') ||
-                           location.hostname.includes('172.') ||
-                           location.port; 
-
-    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isAndroid = /Android/.test(navigator.userAgent);
+function tryInstallPWA() {
+    const installBtn = document.getElementById('install-pwa-btn');
+    const instructionsDiv = document.getElementById('install-instructions');
     
-    const hasModernAPI = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
-    const hasLegacyAPI = navigator.getUserMedia || 
-                        navigator.webkitGetUserMedia || 
-                        navigator.mozGetUserMedia ||
-                        navigator.msGetUserMedia;
-    
-    if (!hasModernAPI && !hasLegacyAPI) {
-        return {
-            supported: false,
-            error: isMobile ? 
-                'Камера не поддерживается на этом мобильном браузере. Попробуйте Chrome или Safari.' :
-                'Ваш браузер не поддерживает доступ к камере. Попробуйте обновить браузер или использовать Chrome/Safari.',
-            mobile: isMobile,
-            ios: isIOS,
-            android: isAndroid
-        };
-    }
-    
-    if (!isSecureContext) {
-        console.warn('Non-secure context detected, camera may not work');
-        
-        return {
-            supported: true,
-            insecure: true,
-            modern: hasModernAPI,
-            legacy: !hasModernAPI && hasLegacyAPI,
-            mobile: isMobile,
-            ios: isIOS,
-            android: isAndroid,
-            warning: 'Сайт работает без HTTPS. Камера может не работать на некоторых устройствах. Для стабильной работы рекомендуется HTTPS.'
-        };
-    }
-    
-    return {
-        supported: true,
-        modern: hasModernAPI,
-        legacy: !hasModernAPI && hasLegacyAPI,
-        mobile: isMobile,
-        ios: isIOS,
-        android: isAndroid
-    };
-}
-
-function getAvailableCameras() {
-    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-        return navigator.mediaDevices.enumerateDevices()
-            .then(devices => {
-                const cameras = devices.filter(device => device.kind === 'videoinput');
-                console.log('Available cameras:', cameras.length);
-                return cameras.length > 0 ? cameras : null;
-            })
-            .catch(err => {
-                console.warn('Camera enumeration failed:', err);
-                return null; 
-            });
-    }
-    return Promise.resolve(null);
-}
-
-function testBasicCameraAccess() {
-    return new Promise((resolve, reject) => {
-        console.log('Testing basic camera access...');
-        
-        const basicConstraints = { video: true };
-        
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            navigator.mediaDevices.getUserMedia(basicConstraints)
-                .then(stream => {
-                    console.log('Basic camera test successful');
-                    if (stream && stream.getTracks) {
-                        stream.getTracks().forEach(track => track.stop());
-                    }
-                    resolve(true);
-                })
-                .catch(err => {
-                    console.warn('Basic camera test failed:', err);
-                    reject(err);
-                });
-        } else {
-            const getUserMedia = navigator.getUserMedia || 
-                               navigator.webkitGetUserMedia || 
-                               navigator.mozGetUserMedia ||
-                               navigator.msGetUserMedia;
-                               
-            if (getUserMedia) {
-                getUserMedia.call(navigator, basicConstraints, 
-                    function(stream) {
-                        console.log('Legacy camera test successful');
-                        if (stream && stream.getTracks) {
-                            stream.getTracks().forEach(track => track.stop());
-                        }
-                        resolve(true);
-                    },
-                    function(err) {
-                        console.warn('Legacy camera test failed:', err);
-                        reject(err);
-                    }
-                );
-            } else {
-                reject(new Error('No camera API available'));
-            }
-        }
-    });
-}
-
-function startQRScanner() {
-    if (isScanning) {
-        showNotification('Сканер уже активен!', 'warning');
-        return;
-    }
-    
-    const qrReaderElement = document.getElementById('qr-reader');
-    const startBtn = document.getElementById('qr-start-btn');
-    const stopBtn = document.getElementById('qr-stop-btn');
-    const statusElement = document.getElementById('scanner-status');
-    
-    const supportCheck = checkCameraSupport();
-    if (!supportCheck.supported) {
-        showNotification(supportCheck.error, 'error');
-        updateScannerStatus('offline', 'Сканер недоступен: ' + supportCheck.error);
-        return;
-    }
-    
-    if (supportCheck.insecure && supportCheck.warning) {
-        showNotification(supportCheck.warning, 'warning');
-        console.warn('Attempting camera access in insecure context');
-    }
-    
-    updateScannerStatus('scanning', 'Инициализация камеры...');
-    startBtn.disabled = true;
-    
-    console.log('Browser support info:', supportCheck);
-    
-    testBasicCameraAccess()
-    .then(() => {
-        console.log('Camera access test passed, initializing scanner...');
-        
-        qrScanner = new Html5Qrcode('qr-reader');
-        
-        const config = {
-            fps: supportCheck.mobile ? 5 : 10,
-            qrbox: function(viewfinderWidth, viewfinderHeight) {
-                const minEdgePercentage = supportCheck.mobile ? 0.8 : 0.7;
-                const maxEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-                const edgeSize = Math.floor(maxEdgeSize * minEdgePercentage);
-                return {
-                    width: Math.min(edgeSize, supportCheck.mobile ? 250 : 300),
-                    height: Math.min(edgeSize, supportCheck.mobile ? 250 : 300)
-                };
-            },
-            aspectRatio: 1.0,
-            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_QRCODE, Html5QrcodeScanType.SCAN_TYPE_BARCODE],
-            showTorchButtonIfSupported: supportCheck.mobile, 
-            showZoomSliderIfSupported: false, 
-            disableFlip: supportCheck.mobile 
-        };
-        
-        let cameraConfig;
-        if (supportCheck.mobile) {
-            cameraConfig = 'environment'; 
-        } else {
-            cameraConfig = { 
-                facingMode: { ideal: "environment" },
-                advanced: [{ focusMode: "continuous" }]
-            };
-        }
-        
-        console.log('Starting scanner with config:', config, 'camera:', cameraConfig);
-        
-        return qrScanner.start(
-            cameraConfig,
-            config,
-            onScanSuccess,
-            onScanFailure
-        );
-        
-    }).then(() => {
-        console.log('Scanner started successfully');
-        isScanning = true;
-        qrReaderElement.style.display = 'block';
-        startBtn.style.display = 'none';
-        stopBtn.style.display = 'inline-flex';
-        startBtn.disabled = false;
-        
-        updateScannerStatus('scanning', 'Сканирование активно');
-        showNotification('Сканер запущен! Наведите камеру на QR/штрих-код', 'success');
-        
-        if (supportCheck.mobile) {
-            setTimeout(() => {
-                showNotification('Для лучшего сканирования держите устройство ровно и обеспечьте хорошее освещение', 'info');
-            }, 3000);
-        }
-        
-    }).catch(err => {
-        console.error('Error starting scanner:', err);
-        startBtn.disabled = false;
-        
-        let errorMessage = 'Ошибка запуска сканера';
-        
-        if (err.name === 'NotAllowedError') {
-            errorMessage = 'Доступ к камере запрещен. Нажмите "Разрешить" при запросе доступа к камере.';
-            if (supportCheck.mobile) {
-                errorMessage += ' Возможно, нужно перезагрузить страницу и попробовать снова.';
-            }
-        } else if (err.name === 'NotFoundError') {
-            errorMessage = supportCheck.mobile ? 
-                'Камера не найдена. Убедитесь, что разрешили доступ к камере для этого сайта.' :
-                'Камера не найдена. Проверьте подключение камеры.';
-        } else if (err.name === 'NotSupportedError') {
-            errorMessage = supportCheck.mobile ?
-                'Камера не поддерживается этим браузером. Попробуйте Chrome или Safari.' :
-                'Камера не поддерживается. Попробуйте другой браузер (Chrome или Safari).';
-        } else if (err.name === 'NotReadableError') {
-            errorMessage = 'Камера заблокирована другим приложением. Закройте другие приложения, использующие камеру.';
-        } else if (err.name === 'OverconstrainedError') {
-            errorMessage = 'Настройки камеры не поддерживаются. Попробуйте ещё раз.';
-        } else if (err.name === 'AbortError') {
-            errorMessage = 'Доступ к камере прерван. Попробуйте ещё раз.';
-        } else if (err.name === 'SecurityError') {
-            errorMessage = 'Ошибка безопасности. Убедитесь, что сайт открыт по HTTPS.';
-        } else if (err.message) {
-            errorMessage += ': ' + err.message;
-        }
-        
-        if (supportCheck.mobile) {
-            errorMessage += '\n\nСоветы для мобильных устройств:\n• Обновите браузер до последней версии\n• Попробуйте Chrome или Safari\n• Убедитесь, что сайт открыт по HTTPS\n• Перезагрузите страницу и попробуйте снова';
-        }
-        
-        showNotification(errorMessage, 'error');
-        if (document.getElementById('mobile-tips')) {
-            document.getElementById('mobile-tips').style.display = 'none';
-        }
-    });
-}
-
-function forceStartScanner() {
-    if (isScanning) {
-        showNotification('Сканер уже активен!', 'warning');
-        return;
-    }
-    
-    console.warn('FORCING scanner start in potentially insecure context');
-    showNotification('🔧 Принудительный запуск сканера (разработка)', 'warning');
-    
-    const qrReaderElement = document.getElementById('qr-reader');
-    const startBtn = document.getElementById('qr-start-btn');
-    const stopBtn = document.getElementById('qr-stop-btn');
-    
-    updateScannerStatus('scanning', 'Принудительная инициализация камеры...');
-    startBtn.disabled = true;
-    
-    testBasicCameraAccess()
-    .then(() => {
-        console.log('Forced camera access successful!');
-        
-        qrScanner = new Html5Qrcode('qr-reader');
-        
-        const config = {
-            fps: 5,
-            qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0,
-            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_QRCODE, Html5QrcodeScanType.SCAN_TYPE_BARCODE]
-        };
-        
-        return qrScanner.start(
-            { facingMode: "environment" },
-            config,
-            onScanSuccess,
-            onScanFailure
-        );
-    })
-    .then(() => {
-        isScanning = true;
-        qrReaderElement.style.display = 'block';
-        startBtn.style.display = 'none';
-        stopBtn.style.display = 'inline-flex';
-        startBtn.disabled = false;
-        
-        updateScannerStatus('scanning', 'Сканирование активно (принудительно)');
-        showNotification('✅ Сканер запущен принудительно!', 'success');
-    })
-    .catch(err => {
-        console.error('Forced scanner failed:', err);
-        startBtn.disabled = false;
-        
-        let errorMessage = 'Принудительный запуск не удался: ' + (err.message || err.name);
-        
-        if (err.name === 'NotAllowedError') {
-            errorMessage += '\nНеобходимо разрешение на доступ к камере.';
-        } else if (err.name === 'NotSupportedError') {
-            errorMessage += '\nКамера действительно не поддерживается браузером.';
-        }
-        
-        showNotification(errorMessage, 'error');
-        updateScannerStatus('offline', 'Ошибка принудительного запуска');
-        resetScannerUI();
-    });
-}
-
-window.forceStartScanner = forceStartScanner;
-
-function stopQRScanner() {
-    if (!isScanning || !qrScanner) {
-        return;
-    }
-    
-    qrScanner.stop().then(() => {
-        qrScanner.clear();
-        qrScanner = null;
-        resetScannerUI();
-        showNotification('Сканер остановлен', 'info');
-    }).catch(err => {
-        console.error('Error stopping scanner:', err);
-        resetScannerUI();
-    });
-}
-
-function resetScannerUI() {
-    isScanning = false;
-    const qrReaderElement = document.getElementById('qr-reader');
-    const startBtn = document.getElementById('qr-start-btn');
-    const stopBtn = document.getElementById('qr-stop-btn');
-    
-    qrReaderElement.style.display = 'none';
-    startBtn.style.display = 'inline-flex';
-    stopBtn.style.display = 'none';
-    
-    updateScannerStatus('offline', 'Сканер отключен');
-}
-
-function showCameraHelp() {
-    const supportCheck = checkCameraSupport();
-    let helpMessage = 'Помощь по использованию камеры:\n\n';
-    
-    if (!supportCheck.supported) {
-        helpMessage += '❌ Камера не поддерживается:\n';
-        helpMessage += supportCheck.error + '\n\n';
-        
-        if (supportCheck.mobile) {
-            helpMessage += '📱 Рекомендации для мобильных устройств:\n';
-            helpMessage += '• Обновите браузер до последней версии\n';
-            helpMessage += '• Используйте Chrome или Safari\n';
-            helpMessage += '• Убедитесь, что сайт открыт по HTTPS\n';
-            helpMessage += '• Перезапустите браузер\n';
-            helpMessage += '• Очистите кеш браузера\n';
-        } else {
-            helpMessage += '💻 Рекомендации для компьютера:\n';
-            helpMessage += '• Проверьте подключение веб-камеры\n';
-            helpMessage += '• Обновите браузер\n';
-            helpMessage += '• Перезапустите браузер\n';
-        }
+    if (window.installPWA && typeof window.installPWA === 'function') {
+        window.installPWA();
     } else {
-        helpMessage += '✅ Камера поддерживается!\n\n';
-        
-        if (supportCheck.mobile) {
-            helpMessage += '📱 Советы для мобильного сканирования:\n';
-            helpMessage += '• При первом запуске нажмите "Разрешить" доступ к камере\n';
-            helpMessage += '• Обеспечьте хорошее освещение\n';
-            helpMessage += '• Держите устройство устойчиво\n';
-            helpMessage += '• Подносите камеру к QR/штрих-коду на расстояние 10-30 см\n';
-            helpMessage += '• Дождитесь автофокусировки камеры\n';
-            helpMessage += '• Попробуйте разные углы сканирования\n\n';
-            
-            helpMessage += '⚠️ Проблемы на мобильном?\n';
-            helpMessage += '• Перезагрузите страницу\n';
-            helpMessage += '• Закройте другие приложения, использующие камеру\n';
-            helpMessage += '• Проверьте настройки разрешений в браузере\n';
-            helpMessage += '• Попробуйте в режиме инкогнито\n';
-        } else {
-            helpMessage += '💻 Советы для компьютера:\n';
-            helpMessage += '• При первом запуске нажмите "Разрешить" доступ к камере\n';
-            helpMessage += '• Подносите QR/штрих-код к камере\n';
-            helpMessage += '• Обеспечьте хорошее освещение\n';
+        if (installBtn) {
+            installBtn.style.display = 'none';
         }
-        
-        helpMessage += '\n📊 Текущие настройки:\n';
-        helpMessage += `• Браузер: ${navigator.userAgent.split(' ')[0]}\n`;
-        helpMessage += `• HTTPS: ${location.protocol === 'https:' ? '✅' : '❌ (Может ограничивать доступ к камере)'}\n`;
-        helpMessage += `• Мобильное устройство: ${supportCheck.mobile ? '✅' : '❌'}\n`;
-        helpMessage += `• Современный API: ${supportCheck.modern ? '✅' : '❌'}\n`;
-        
-        if (supportCheck.insecure) {
-            helpMessage += '\n⚠️ Обнаружено небезопасное соединение (HTTP):\n';
-            helpMessage += '• Камера может не работать на мобильных устройствах\n';
-            helpMessage += '• Рекомендуется настроить HTTPS для стабильной работы\n';
-            helpMessage += '• В разработке можно попробовать localhost или 127.0.0.1\n';
+        if (instructionsDiv) {
+            instructionsDiv.style.display = 'block';
         }
-    }
-    
-    if (window.confirm) {
-        const userWantsToTry = confirm(helpMessage + '\nПопробовать запустить сканер сейчас?');
-        
-        if (userWantsToTry && supportCheck.supported && !isScanning) {
-            startQRScanner();
-        }
-    } else {
-        showNotification(helpMessage, 'info');
+        showNotification('Для установки используйте меню браузера: "Установить приложение"', 'info');
     }
 }
 
-function onScanSuccess(decodedText, decodedResult) {
-    const cardNumber = extractCardNumber(decodedText);
-    
-    if (cardNumber) {
-        const cardInput = document.getElementById('card-input');
-        if (cardInput) {
-            const currentValue = cardInput.value.trim();
-            const newValue = currentValue ? currentValue + '\n' + cardNumber : cardNumber;
-            cardInput.value = newValue;
-            
-            const lines = newValue.split('\n').filter(line => line.trim());
-            updateInputStats(lines.length);
-            
-            addScannedItem(cardNumber);
-            
-            updateScannerStatus('success', `Отсканировано: ${cardNumber}`);
-            showNotification(`Карта добавлена: ${cardNumber}`, 'success');
-            
-            setTimeout(() => {
-                if (isScanning) {
-                    updateScannerStatus('scanning', 'Сканирование активно');
-                }
-            }, 3000);
-        }
-    } else {
-        showNotification('Не удалось извлечь номер карты из QR/штрих-кода', 'warning');
-    }
-}
 
-function onScanFailure(error) {
-}
 
-function extractCardNumber(scanText) {
-    const cleanText = scanText.replace(/\D/g, '');
-    
-    if (cleanText.length >= 6 && cleanText.length <= 20) {
-        return cleanText;
-    }
-    
-    const patterns = [
-        /\b\d{10,19}\b/, 
-        /\b\d{6,9}\b/,   
-        /[A-Z0-9]{8,16}/ 
-    ];
-    
-    for (const pattern of patterns) {
-        const match = scanText.match(pattern);
-        if (match) {
-            return match[0].replace(/\D/g, ''); 
-        }
-    }
-    
-    if (cleanText.length >= 6) {
-        return cleanText;
-    }
-    
-    return null;
-}
-
-function updateScannerStatus(status, message) {
-    const statusElement = document.getElementById('scanner-status');
-    if (!statusElement) return;
-    
-    const indicator = statusElement.querySelector('.status-indicator');
-    if (!indicator) return;
-    
-    indicator.classList.remove('offline', 'scanning', 'success');
-    indicator.classList.add(status);
-    
-    const messageSpan = indicator.querySelector('span');
-    if (messageSpan) {
-        messageSpan.textContent = message;
-    }
-}
-
-function addScannedItem(cardNumber) {
-    const timestamp = new Date();
-    const item = {
-        value: cardNumber,
-        time: timestamp.toLocaleTimeString('ru-RU', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        }),
-        timestamp: timestamp.getTime()
-    };
-    
-    scannedItems.unshift(item);
-    
-    if (scannedItems.length > 10) {
-        scannedItems = scannedItems.slice(0, 10);
-    }
-    
-    updateScannedItemsDisplay();
-    
-    const historyElement = document.getElementById('scanner-history');
-    if (historyElement) {
-        historyElement.style.display = 'block';
+function closeModal() {
+    const modal = document.getElementById('modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
     }
 }
 
@@ -2152,14 +1677,3 @@ function clearScannedItems() {
     showNotification('История сканирования очищена', 'info');
 }
 
-function closeModal() {
-    if (isScanning) {
-        stopQRScanner();
-    }
-    
-    const modal = document.getElementById('modal');
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
-    }
-}
