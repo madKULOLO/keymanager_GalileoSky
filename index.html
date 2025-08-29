@@ -60,7 +60,7 @@
                         <div class="header-text">
                             <h1>ADD аль DEL КЕЙ на Галилей?</h1>
                             <p class="subtitle">Профессиональная система управления топливными картами</p>
-                            <p class="copyright">© madKULOLO • Версия 2.0 Pro Turbo</p>
+                            <p class="copyright">© madKULOLO • Версия 2.0 Pro</p>
                         </div>
                     </div>
                     
@@ -233,6 +233,21 @@
                             <div class="scanner-header">
                                 <h4><i class="fas fa-qrcode"></i> Сканирование QR/Barcode</h4>
                                 <p>Наведите камеру на QR-код или штрих-код топливной карты</p>
+                                
+                                <div class="mobile-tips" id="mobile-tips" style="display: none;">
+                                    <div class="tip-item">
+                                        <i class="fas fa-lightbulb"></i>
+                                        <span>Обеспечьте хорошее освещение</span>
+                                    </div>
+                                    <div class="tip-item">
+                                        <i class="fas fa-hand-paper"></i>
+                                        <span>Держите устройство стабильно</span>
+                                    </div>
+                                    <div class="tip-item">
+                                        <i class="fas fa-expand-arrows-alt"></i>
+                                        <span>Расстояние 10-30 см от кода</span>
+                                    </div>
+                                </div>
                             </div>
                             
                             <div class="scanner-buttons">
@@ -244,6 +259,16 @@
                                 <button class="modal-btn secondary-btn" onclick="stopQRScanner()" id="qr-stop-btn" style="display: none;">
                                     <i class="fas fa-stop"></i>
                                     <span>Остановить</span>
+                                </button>
+                                
+                                <button class="modal-btn help-btn" onclick="showCameraHelp()" id="camera-help-btn" title="Помощь с камерой">
+                                    <i class="fas fa-question-circle"></i>
+                                    <span>Помощь</span>
+                                </button>
+                                
+                                <button class="modal-btn force-btn" onclick="forceStartScanner()" id="force-scanner-btn" style="display: none;" title="Принудительный запуск для разработки">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span>Принудительно</span>
                                 </button>
                             </div>
                             
@@ -508,7 +533,7 @@
     <div id="pwa-banner" class="pwa-banner" style="display: none;">
         <div class="pwa-content">
             <div class="pwa-icon">
-                <i class="fas fa-mobile-alt"></i>
+                <i class="fas fa-download"></i>
             </div>
             <div class="pwa-text">
                 <strong>Установите приложение</strong>
