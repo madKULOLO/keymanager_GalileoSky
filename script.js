@@ -1552,3 +1552,270 @@ function hidePWABanner() {
         pwaBanner.style.display = 'none';
     }
 }
+
+let qrScanner = null;
+let isScanning = false;
+let scannedItems = [];
+
+function startQRScanner() {
+    if (isScanning) {
+        showNotification('Сканер уже активен!', 'warning');
+        return;
+    }
+    
+    const qrReaderElement = document.getElementById('qr-reader');
+    const startBtn = document.getElementById('qr-start-btn');
+    const stopBtn = document.getElementById('qr-stop-btn');
+    const statusElement = document.getElementById('scanner-status');
+    
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showNotification('Камера не поддерживается вашим браузером', 'error');
+        return;
+    }
+    
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            stream.getTracks().forEach(track => track.stop());
+            
+            qrScanner = new Html5Qrcode('qr-reader');
+            
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0,
+                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_QRCODE, Html5QrcodeScanType.SCAN_TYPE_BARCODE]
+            };
+            
+            qrScanner.start(
+                { facingMode: "environment" }, 
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).then(() => {
+                isScanning = true;
+                qrReaderElement.style.display = 'block';
+                startBtn.style.display = 'none';
+                stopBtn.style.display = 'inline-flex';
+                
+                updateScannerStatus('scanning', 'Сканирование активно');
+                showNotification('Сканер запущен! Наведите камеру на QR/штрих-код', 'success');
+                
+            }).catch(err => {
+                console.error('Error starting scanner:', err);
+                showNotification('Ошибка запуска сканера: ' + err.message, 'error');
+                resetScannerUI();
+            });
+            
+        })
+        .catch(err => {
+            console.error('Camera permission denied:', err);
+            if (err.name === 'NotAllowedError') {
+                showNotification('Доступ к камере запрещен. Разрешите доступ в настройках браузера.', 'error');
+            } else if (err.name === 'NotFoundError') {
+                showNotification('Камера не найдена на устройстве', 'error');
+            } else {
+                showNotification('Ошибка доступа к камере: ' + err.message, 'error');
+            }
+        });
+}
+
+function stopQRScanner() {
+    if (!isScanning || !qrScanner) {
+        return;
+    }
+    
+    qrScanner.stop().then(() => {
+        qrScanner.clear();
+        qrScanner = null;
+        resetScannerUI();
+        showNotification('Сканер остановлен', 'info');
+    }).catch(err => {
+        console.error('Error stopping scanner:', err);
+        resetScannerUI();
+    });
+}
+
+function resetScannerUI() {
+    isScanning = false;
+    const qrReaderElement = document.getElementById('qr-reader');
+    const startBtn = document.getElementById('qr-start-btn');
+    const stopBtn = document.getElementById('qr-stop-btn');
+    
+    qrReaderElement.style.display = 'none';
+    startBtn.style.display = 'inline-flex';
+    stopBtn.style.display = 'none';
+    
+    updateScannerStatus('offline', 'Сканер отключен');
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+    const cardNumber = extractCardNumber(decodedText);
+    
+    if (cardNumber) {
+        const cardInput = document.getElementById('card-input');
+        if (cardInput) {
+            const currentValue = cardInput.value.trim();
+            const newValue = currentValue ? currentValue + '\n' + cardNumber : cardNumber;
+            cardInput.value = newValue;
+            
+            const lines = newValue.split('\n').filter(line => line.trim());
+            updateInputStats(lines.length);
+            
+            addScannedItem(cardNumber);
+            
+            updateScannerStatus('success', `Отсканировано: ${cardNumber}`);
+            showNotification(`Карта добавлена: ${cardNumber}`, 'success');
+            
+            setTimeout(() => {
+                if (isScanning) {
+                    updateScannerStatus('scanning', 'Сканирование активно');
+                }
+            }, 3000);
+        }
+    } else {
+        showNotification('Не удалось извлечь номер карты из QR/штрих-кода', 'warning');
+    }
+}
+
+function onScanFailure(error) {
+}
+
+function extractCardNumber(scanText) {
+    const cleanText = scanText.replace(/\D/g, '');
+    
+    if (cleanText.length >= 6 && cleanText.length <= 20) {
+        return cleanText;
+    }
+    
+    const patterns = [
+        /\b\d{10,19}\b/, 
+        /\b\d{6,9}\b/,   
+        /[A-Z0-9]{8,16}/ 
+    ];
+    
+    for (const pattern of patterns) {
+        const match = scanText.match(pattern);
+        if (match) {
+            return match[0].replace(/\D/g, ''); 
+        }
+    }
+    
+    if (cleanText.length >= 6) {
+        return cleanText;
+    }
+    
+    return null;
+}
+
+function updateScannerStatus(status, message) {
+    const statusElement = document.getElementById('scanner-status');
+    if (!statusElement) return;
+    
+    const indicator = statusElement.querySelector('.status-indicator');
+    if (!indicator) return;
+    
+    indicator.classList.remove('offline', 'scanning', 'success');
+    indicator.classList.add(status);
+    
+    const messageSpan = indicator.querySelector('span');
+    if (messageSpan) {
+        messageSpan.textContent = message;
+    }
+}
+
+function addScannedItem(cardNumber) {
+    const timestamp = new Date();
+    const item = {
+        value: cardNumber,
+        time: timestamp.toLocaleTimeString('ru-RU', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        }),
+        timestamp: timestamp.getTime()
+    };
+    
+    scannedItems.unshift(item);
+    
+    if (scannedItems.length > 10) {
+        scannedItems = scannedItems.slice(0, 10);
+    }
+    
+    updateScannedItemsDisplay();
+    
+    const historyElement = document.getElementById('scanner-history');
+    if (historyElement) {
+        historyElement.style.display = 'block';
+    }
+}
+
+function updateScannedItemsDisplay() {
+    const container = document.getElementById('scanned-items');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    scannedItems.forEach((item, index) => {
+        const itemElement = document.createElement('div');
+        itemElement.className = 'scanned-item';
+        itemElement.innerHTML = `
+            <div class="item-value">${item.value}</div>
+            <div class="item-time">${item.time}</div>
+            <div class="item-actions">
+                <button class="item-action" onclick="removeScannedItem(${index})" title="Удалить">
+                    <i class="fas fa-times"></i>
+                </button>
+                <button class="item-action" onclick="copyScannedItem('${item.value}')" title="Копировать">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(itemElement);
+    });
+}
+
+function removeScannedItem(index) {
+    if (index >= 0 && index < scannedItems.length) {
+        const removedItem = scannedItems.splice(index, 1)[0];
+        updateScannedItemsDisplay();
+        showNotification(`Удален: ${removedItem.value}`, 'info');
+        
+        if (scannedItems.length === 0) {
+            const historyElement = document.getElementById('scanner-history');
+            if (historyElement) {
+                historyElement.style.display = 'none';
+            }
+        }
+    }
+}
+
+function copyScannedItem(value) {
+    navigator.clipboard.writeText(value).then(() => {
+        showNotification(`Скопировано: ${value}`, 'success');
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        showNotification('Ошибка копирования', 'error');
+    });
+}
+
+function clearScannedItems() {
+    scannedItems = [];
+    updateScannedItemsDisplay();
+    const historyElement = document.getElementById('scanner-history');
+    if (historyElement) {
+        historyElement.style.display = 'none';
+    }
+    showNotification('История сканирования очищена', 'info');
+}
+
+function closeModal() {
+    if (isScanning) {
+        stopQRScanner();
+    }
+    
+    const modal = document.getElementById('modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
