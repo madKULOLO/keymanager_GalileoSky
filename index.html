@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="description" content="Профессиональная система для работы с топливными картами GalileoSky ТК">
+    <meta name="keywords" content="галилей, карты, топливо, ключи, hexadecimal, converter">
+    <meta name="author" content="madKULOLO">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="theme-color" content="#667eea">    
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>    
+    <title>ADD аль DEL КЕЙ на Галилей? © madKULOLO</title>  
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Галилей Карты">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💳</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>Загрузка системы...</h2>
+            <p>Инициализация модулей</p>
+        </div>
+    </div>
+    
+    <div id="app" class="app-container">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <i class="fas fa-credit-card"></i>
+                <span>EasyFuel GalileoSky</span>
+            </div>
+            <div class="nav-tools">
+                <button class="nav-btn" onclick="toggleDarkMode()" title="Переключить тему">
+                    <i class="fas fa-moon" id="theme-icon"></i>
+                </button>
+                <button class="nav-btn" onclick="showHelp()" title="Справка">
+                    <i class="fas fa-question-circle"></i>
+                </button>
+                <button class="nav-btn" onclick="showStats()" title="Статистика">
+                    <i class="fas fa-chart-bar"></i>
+                </button>
+            </div>
+        </nav>
+        
+        <div class="main-container">
+            <div class="container">
+                <div class="header">
+                    <div class="header-content">
+                        <div class="header-icon">
+                            <i class="fas fa-satellite-dish"></i>
+                        </div>
+                        <div class="header-text">
+                            <h1>ADD аль DEL КЕЙ на Галилей?</h1>
+                            <p class="subtitle">Профессиональная система управления топливными картами</p>
+                            <p class="copyright">© madKULOLO • Версия 2.0 Pro</p>
+                        </div>
+                    </div>
+                    
+                    <div class="status-bar">
+                        <div class="status-item">
+                            <i class="fas fa-wifi"></i>
+                            <span id="connection-status">Онлайн</span>
+                        </div>
+                        <div class="status-item">
+                            <i class="fas fa-clock"></i>
+                            <span id="current-time"></span>
+                        </div>
+                        <div class="status-item">
+                            <i class="fas fa-memory"></i>
+                            <span id="processed-count">Обработано: 0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="main-buttons">
+                    <button class="action-btn add-btn" onclick="openModal('ADD')">
+                        <div class="btn-icon">
+                            <i class="fas fa-plus-circle"></i>
+                        </div>
+                        <div class="btn-content">
+                            <span class="btn-title">ДОБАВИТЬ</span>
+                            <span class="btn-desc">Конвертация в HEX с префиксом addkey</span>
+                        </div>
+                        <div class="btn-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </button>
+                    
+                    <button class="action-btn delete-btn" onclick="openModal('DELETE')">
+                        <div class="btn-icon">
+                            <i class="fas fa-minus-circle"></i>
+                        </div>
+                        <div class="btn-content">
+                            <span class="btn-title">УДАЛИТЬ</span>
+                            <span class="btn-desc">Конвертация в HEX с префиксом delkey</span>
+                        </div>
+                        <div class="btn-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </button>
+                    
+                    <button class="action-btn decode-btn" onclick="openModal('DECODE')">
+                        <div class="btn-icon">
+                            <i class="fas fa-key"></i>
+                        </div>
+                        <div class="btn-content">
+                            <span class="btn-title">ДЕКОДЕР</span>
+                            <span class="btn-desc">Конвертация HEX в десятичный</span>
+                        </div>
+                        <div class="btn-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </button>
+                </div>
+                
+                <div class="quick-actions">
+                    <button class="quick-btn" onclick="showHistory()">
+                        <i class="fas fa-history"></i>
+                        <span>История</span>
+                    </button>
+                    <button class="quick-btn" onclick="bulkProcess()">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Массовая обработка</span>
+                    </button>
+                    <button class="quick-btn" onclick="showStats()">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Статистика</span>
+                    </button>
+                </div>
+                
+                <div class="footer">
+                    <div class="footer-content">
+                        <div class="footer-section">
+                            <h4>Возможности системы</h4>
+                            <ul>
+                                <li>Конвертация номеров карт</li>
+                                <li>Массовая обработка данных</li>
+                                <li>История операций</li>
+                                <li>Экспорт результатов</li>
+                            </ul>
+                        </div>
+                        <div class="footer-section">
+                            <h4>Горячие клавиши</h4>
+                            <ul>
+                                <li><kbd>Ctrl</kbd> + <kbd>1</kbd> - Добавить</li>
+                                <li><kbd>Ctrl</kbd> + <kbd>2</kbd> - Удалить</li>
+                                <li><kbd>Ctrl</kbd> + <kbd>3</kbd> - Декодер</li>
+                                <li><kbd>Esc</kbd> - Закрыть окно</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="footer-bottom">
+                        <p>Профессиональная система для работы с топливными картами ИзиФуел ГалилеоСкай</p>
+                        <p>Разработано с ❤️ для повышения эффективности работы Support-Integration</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content advanced-modal">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <div class="modal-icon" id="modal-icon">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <div class="modal-title-section">
+                        <h2 id="modal-title">Карты вставь в столбец</h2>
+                        <p id="modal-subtitle">Выберите операцию для обработки</p>
+                    </div>
+                </div>
+                <div class="modal-header-right">
+                    <div class="modal-progress">
+                        <div class="progress-step active" data-step="1">Ввод</div>
+                        <div class="progress-step" data-step="2">Обработка</div>
+                        <div class="progress-step" data-step="3">Результат</div>
+                    </div>
+                    <button class="close-btn" onclick="closeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="modal-body">
+                <div class="input-section">
+                    <div class="section-header">
+                        <label for="card-input">Введите номера карт:</label>
+                        <div class="input-stats">
+                            <span id="input-count">0 карт</span>
+                            <span class="separator">•</span>
+                            <span id="input-format">DEC формат</span>
+                        </div>
+                    </div>
+                    
+                    <div class="input-container">
+                        <textarea id="card-input" 
+                                  placeholder="Вставьте номера карт здесь...&#10;Например:&#10;123456&#10;789012&#10;345678"
+                                  spellcheck="false"
+                                  autocomplete="off">
+                        </textarea>
+                        <div class="input-overlay">
+                            <div class="input-tools">
+                                <button class="input-tool-btn" onclick="validateInput()" title="Проверить формат">
+                                    <i class="fas fa-check-circle"></i>
+                                </button>
+                                <button class="input-tool-btn" onclick="formatInput()" title="Форматировать">
+                                    <i class="fas fa-magic"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="file-upload-section">
+                        <div class="file-upload-area" onclick="document.getElementById('file-input').click()">
+                            <input type="file" id="file-input" accept=".txt,.csv" style="display: none;" onchange="handleFileUpload(event)">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Перетащите файл сюда или нажмите для выбора</p>
+                            <small>Поддерживаемые форматы: .txt, .csv</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="processing-options">
+                    <div class="option-group">
+                        <label class="option-label">
+                            <input type="checkbox" id="remove-duplicates" checked>
+                            <span class="checkmark"></span>
+                            Удалить дубликаты
+                        </label>
+                        <label class="option-label">
+                            <input type="checkbox" id="sort-output">
+                            <span class="checkmark"></span>
+                            Сортировать результат
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button class="modal-btn primary-btn" onclick="processCards()">
+                        <i class="fas fa-cogs"></i>
+                        <span>Задеплоить</span>
+                        <div class="btn-loading">
+                            <div class="loading-dots">
+                                <span></span><span></span><span></span>
+                            </div>
+                        </div>
+                    </button>
+                    
+                    <button class="modal-btn secondary-btn" onclick="pasteFromClipboard()" title="Вставить из буфера обмена (или используйте Ctrl+V)">
+                        <i class="fas fa-clipboard"></i>
+                        <span>Вставить</span>
+                    </button>
+                    
+                    <button class="modal-btn secondary-btn" onclick="clearInput()">
+                        <i class="fas fa-broom"></i>
+                        <span>Очистить</span>
+                    </button>
+                    
+                    <button class="modal-btn secondary-btn" onclick="showPreview()">
+                        <i class="fas fa-eye"></i>
+                        <span>Предпросмотр</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-modal" class="modal result-modal">
+        <div class="modal-content advanced-modal result-modal-content">
+            <div class="modal-header success-header">
+                <div class="modal-header-left">
+                    <div class="modal-icon success-icon">
+                        <i class="fas fa-magic"></i>
+                    </div>
+                    <div class="modal-title-section">
+                        <h2>Дедова магия ✨</h2>
+                        <p id="result-subtitle">Обработка завершена успешно</p>
+                    </div>
+                </div>
+                <div class="modal-header-right">
+                    <div class="result-stats">
+                        <div class="stat-item">
+                            <span id="processed-cards-count">0</span>
+                            <small>Обработано</small>
+                        </div>
+                        <div class="stat-item">
+                            <span id="processing-time">0ms</span>
+                            <small>Время</small>
+                        </div>
+                    </div>
+                    <button class="close-btn" onclick="closeResultModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="modal-body">
+                <div class="result-section">
+                    <div class="section-header">
+                        <label for="result-output">Результат обработки:</label>
+                        <div class="result-actions">
+                            <label for="export-format" class="format-label">Формат:</label>
+                            <select id="export-format" class="format-select">
+                                <option value="txt">Текстовый файл (.txt)</option>
+                                <option value="json">JSON файл (.json)</option>
+                                <option value="csv">CSV файл (.csv)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="result-container">
+                        <textarea id="result-output" readonly spellcheck="false"></textarea>
+                        <div class="result-overlay">
+                            <div class="result-tools">
+                                <button class="result-tool-btn" onclick="selectAllResult()" title="Выделить всё">
+                                    <i class="fas fa-select-all"></i>
+                                </button>
+                                <button class="result-tool-btn" onclick="toggleWrap()" title="Перенос строк">
+                                    <i class="fas fa-text-width"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="analysis-section">
+                    <h4>Анализ результатов:</h4>
+                    <div class="analysis-grid">
+                        <div class="analysis-item">
+                            <div class="analysis-value" id="total-processed">0</div>
+                            <div class="analysis-label">Обработано карт</div>
+                        </div>
+                        <div class="analysis-item">
+                            <div class="analysis-value" id="duplicates-found">0</div>
+                            <div class="analysis-label">Найдено дубликатов</div>
+                        </div>
+                        <div class="analysis-item">
+                            <div class="analysis-value" id="errors-found">0</div>
+                            <div class="analysis-label">Ошибок обработки</div>
+                        </div>
+                        <div class="analysis-item">
+                            <div class="analysis-value" id="file-size">0 KB</div>
+                            <div class="analysis-label">Размер файла</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="button-group result-buttons">
+                    <button class="modal-btn primary-btn" onclick="copyToClipboard()">
+                        <i class="fas fa-copy"></i>
+                        <span>Копировать</span>
+                    </button>
+                    
+                    <button class="modal-btn primary-btn" onclick="saveToFile()">
+                        <i class="fas fa-download"></i>
+                        <span>Схоронить</span>
+                    </button>
+                    
+                    <button class="modal-btn secondary-btn" onclick="printResult()">
+                        <i class="fas fa-print"></i>
+                        <span>Печать</span>
+                    </button>
+                    
+                    <button class="modal-btn secondary-btn" onclick="shareResult()">
+                        <i class="fas fa-share-alt"></i>
+                        <span>Поделиться</span>
+                    </button>
+                    
+                    <button class="modal-btn secondary-btn" onclick="processAnother()">
+                        <i class="fas fa-plus"></i>
+                        <span>Обработать ещё</span>
+                    </button>
+                </div>
+                
+                <div id="status-message" class="status-message"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="help-modal" class="modal">
+        <div class="modal-content help-modal">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <div class="modal-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <div class="modal-title-section">
+                        <h2>Справка по системе</h2>
+                        <p>Полное руководство по использованию</p>
+                    </div>
+                </div>
+                <button class="close-btn" onclick="closeHelpModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body help-content">
+            </div>
+        </div>
+    </div>
+    
+    <div id="stats-modal" class="modal">
+        <div class="modal-content stats-modal">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <div class="modal-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="modal-title-section">
+                        <h2>Статистика использования</h2>
+                        <p>Анализ работы с системой</p>
+                    </div>
+                </div>
+                <button class="close-btn" onclick="closeStatsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body stats-content">
+            </div>
+        </div>
+    </div>
+    
+    <div id="history-modal" class="modal">
+        <div class="modal-content history-modal">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <div class="modal-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div class="modal-title-section">
+                        <h2>История операций</h2>
+                        <p>Последние обработанные карты</p>
+                    </div>
+                </div>
+                <button class="close-btn" onclick="closeHistoryModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body history-content">
+            </div>
+        </div>
+    </div>
+    
+    <div id="notification-toast" class="notification-toast">
+        <div class="toast-content">
+            <div class="toast-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="toast-message">
+                <div class="toast-title">Успешно!</div>
+                <div class="toast-text">Операция выполнена успешно</div>
+            </div>
+            <button class="toast-close" onclick="hideToast()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="toast-progress"></div>
+    </div>
+
+    <div id="pwa-banner" class="pwa-banner" style="display: none;">
+        <div class="pwa-content">
+            <div class="pwa-icon">
+                <i class="fas fa-mobile-alt"></i>
+            </div>
+            <div class="pwa-text">
+                <strong>Установите приложение</strong>
+                <p>Для быстрого доступа с рабочего стола</p>
+            </div>
+            <div class="pwa-actions">
+                <button class="pwa-btn primary" onclick="installPWA()">Установить</button>
+                <button class="pwa-btn secondary" onclick="hidePWABanner()">Позже</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
