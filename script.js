@@ -884,89 +884,237 @@ function showHistory() {
     const history = JSON.parse(localStorage.getItem('galileo-history') || '[]');
     
     if (historyContent) {
-        if (history.length === 0) {
-            historyContent.innerHTML = `
-                <div class="empty-history">
-                    <i class="fas fa-history"></i>
-                    <h3>История пуста</h3>
-                    <p>Обработанные операции будут отображаться здесь</p>
-                </div>
-            `;
-        } else {
-            const historyHTML = history.map(item => {
-                const date = new Date(item.timestamp);
-                const formattedDate = date.toLocaleString('ru-RU');
-                const actionNames = {
-                    'ADD': 'Добавление',
-                    'DELETE': 'Удаление', 
-                    'DECODE': 'Декодирование'
-                };
-                
-                const previewResults = item.results ? item.results.slice(0, 3).join('\n') : 'Нет данных';
-                const hasMoreResults = item.results && item.results.length > 3;
-                
-                return `
-                    <div class="history-item enhanced" data-history-id="${item.id}">
-                        <div class="history-header">
-                            <div class="history-main-info">
-                                <span class="history-action">${actionNames[item.action] || item.action}</span>
-                                <span class="history-date">${formattedDate}</span>
-                            </div>
-                            <div class="history-actions">
-                                ${item.results ? `
-                                    <button class="history-btn" onclick="downloadHistoryItem('${item.id}')" title="Скачать результат">
-                                        <i class="fas fa-download"></i>
-                                    </button>
-                                    <button class="history-btn" onclick="viewHistoryItem('${item.id}')" title="Посмотреть">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="history-btn" onclick="copyHistoryItem('${item.id}')" title="Копировать">
-                                        <i class="fas fa-copy"></i>
-                                    </button>
-                                ` : ''}
-                                <button class="history-btn danger" onclick="deleteHistoryItem('${item.id}')" title="Удалить">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="history-details">
-                            <div class="history-stats">
-                                <span class="stat">Обработано: <strong>${item.count}</strong></span>
-                                ${item.duplicates > 0 ? `<span class="stat">Дубликатов: <strong>${item.duplicates}</strong></span>` : ''}
-                                ${item.errors > 0 ? `<span class="stat error">Ошибок: <strong>${item.errors}</strong></span>` : ''}
-                            </div>
-                            ${item.results ? `
-                                <div class="history-preview">
-                                    <div class="preview-label">Предпросмотр результата:</div>
-                                    <pre class="preview-text">${previewResults}${hasMoreResults ? '\n...' : ''}</pre>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            
-            historyContent.innerHTML = `
-                <div class="history-list">${historyHTML}</div>
-                <div class="history-footer-actions">
-                    <button class="modal-btn secondary-btn" onclick="exportAllHistory()">
-                        <i class="fas fa-file-export"></i> Экспорт всей истории
-                    </button>
-                    <button class="modal-btn secondary-btn" onclick="clearHistory()">
-                        <i class="fas fa-trash"></i> Очистить историю
-                    </button>
-                </div>
-            `;
-        }
+        renderHistoryContent(history);
     }
     
     if (historyModal) {
         historyModal.style.display = 'flex';
         historyModal.classList.add('show');
         
+        const searchInput = document.getElementById('history-search');
+        if (searchInput) {
+            searchInput.value = '';
+            updateSearchClearButton();
+        }
+        
         setTimeout(() => {
             addHistorySwipeListeners();
         }, 100);
+    }
+}
+
+function renderHistoryContent(history) {
+    const historyContent = document.querySelector('.history-content');
+    
+    if (history.length === 0) {
+        historyContent.innerHTML = `
+            <div class="empty-history">
+                <i class="fas fa-history"></i>
+                <h3>История пуста</h3>
+                <p>Обработанные операции будут отображаться здесь</p>
+            </div>
+        `;
+    } else {
+        const historyHTML = history.map(item => {
+            const date = new Date(item.timestamp);
+            const formattedDate = date.toLocaleString('ru-RU');
+            const actionNames = {
+                'ADD': 'Добавление',
+                'DELETE': 'Удаление', 
+                'DECODE': 'Декодирование'
+            };
+            
+            const previewResults = item.results ? item.results.slice(0, 3).join('\n') : 'Нет данных';
+            const hasMoreResults = item.results && item.results.length > 3;
+            
+            return `
+                <div class="history-item enhanced" data-history-id="${item.id}">
+                    <div class="history-header">
+                        <div class="history-main-info">
+                            <span class="history-action">${actionNames[item.action] || item.action}</span>
+                            <span class="history-date">${formattedDate}</span>
+                        </div>
+                        <div class="history-actions">
+                            ${item.results ? `
+                                <button class="history-btn" onclick="downloadHistoryItem('${item.id}')" title="Скачать результат">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <button class="history-btn" onclick="viewHistoryItem('${item.id}')" title="Посмотреть">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="history-btn" onclick="copyHistoryItem('${item.id}')" title="Копировать">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            ` : ''}
+                            <button class="history-btn danger" onclick="deleteHistoryItem('${item.id}')" title="Удалить">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="history-details">
+                        <div class="history-stats">
+                            <span class="stat">Обработано: <strong>${item.count}</strong></span>
+                            ${item.duplicates > 0 ? `<span class="stat">Дубликатов: <strong>${item.duplicates}</strong></span>` : ''}
+                            ${item.errors > 0 ? `<span class="stat error">Ошибок: <strong>${item.errors}</strong></span>` : ''}
+                        </div>
+                        ${item.results ? `
+                            <div class="history-preview">
+                                <div class="preview-label">Предпросмотр результата:</div>
+                                <pre class="preview-text">${previewResults}${hasMoreResults ? '\n...' : ''}</pre>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        historyContent.innerHTML = `
+            <div class="history-list">${historyHTML}</div>
+            <div class="history-footer-actions">
+                <button class="modal-btn secondary-btn" onclick="exportAllHistory()">
+                    <i class="fas fa-file-export"></i> Экспорт всей истории
+                </button>
+                <button class="modal-btn secondary-btn" onclick="clearHistory()">
+                    <i class="fas fa-trash"></i> Очистить историю
+                </button>
+            </div>
+        `;
+    }
+}
+
+function filterHistory() {
+    try {
+        const searchInput = document.getElementById('history-search');
+        const searchTerm = searchInput.value.trim();
+        
+        updateSearchClearButton();
+        
+        if (!searchTerm) {
+            // Show all history if search is empty
+            const history = JSON.parse(localStorage.getItem('galileo-history') || '[]');
+            renderHistoryContent(history);
+            return;
+        }
+        
+        const history = JSON.parse(localStorage.getItem('galileo-history') || '[]');
+        const filteredHistory = history.filter(item => {
+            if (!item.results || !Array.isArray(item.results)) {
+                return false;
+            }
+            
+            return item.results.some(result => {
+                return searchInCardNumber(result, searchTerm);
+            });
+        });
+        
+        renderHistoryContent(filteredHistory);
+        
+        // Show search results count
+        if (searchTerm && filteredHistory.length !== history.length) {
+            const historyContent = document.querySelector('.history-content');
+            if (filteredHistory.length === 0) {
+                historyContent.innerHTML = `
+                    <div class="empty-history">
+                        <i class="fas fa-search"></i>
+                        <h3>Ничего не найдено</h3>
+                        <p>По запросу "${searchTerm}" результатов не найдено</p>
+                        <button class="modal-btn secondary-btn" onclick="clearHistorySearch()">
+                            Очистить поиск
+                        </button>
+                    </div>
+                `;
+            } else {
+                // Add search results header
+                const historyList = historyContent.querySelector('.history-list');
+                if (historyList) {
+                    const searchHeader = document.createElement('div');
+                    searchHeader.className = 'search-results-header';
+                    searchHeader.innerHTML = `
+                        <i class="fas fa-search"></i> 
+                        Найдено ${filteredHistory.length} из ${history.length} записей по запросу "${searchTerm}"
+                    `;
+                    historyContent.insertBefore(searchHeader, historyList);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error in filterHistory:', error);
+        showNotification('Ошибка при поиске: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Поиск номера карты в десятичном и шестнадцатеричном форматах
+ * @param {string} cardResult - Строка результата карты для поиска
+ * @param {string} searchTerm - Поисковый запрос
+ * @returns {boolean} - Совпадает ли поисковый запрос с результатом карты
+ */
+function searchInCardNumber(cardResult, searchTerm) {
+    if (!cardResult || !searchTerm) {
+        return false;
+    }
+    
+    try {
+        const cleanResult = cardResult.replace(/^(addkey|delkey)\s+/i, '').trim();
+        const normalizedResult = cleanResult.toUpperCase();
+        const normalizedSearch = searchTerm.toUpperCase();
+        
+        if (normalizedResult.includes(normalizedSearch)) {
+            return true;
+        }
+        
+        if (/^\d+$/.test(searchTerm)) {
+            const decimalValue = parseInt(searchTerm, 10);
+            if (!isNaN(decimalValue)) {
+                const hexFromDecimal = decimalValue.toString(16).toUpperCase();
+                if (normalizedResult.includes(hexFromDecimal)) {
+                    return true;
+                }
+                if (hexFromDecimal.includes(normalizedSearch)) {
+                    return true;
+                }
+            }
+        }
+        
+        if (/^[0-9A-F]+$/i.test(searchTerm)) {
+            const hexValue = parseInt(searchTerm, 16);
+            if (!isNaN(hexValue)) {
+                const decimalFromHex = hexValue.toString(10);
+                if (cleanResult.includes(decimalFromHex)) {
+                    return true;
+                }
+                if (decimalFromHex.includes(searchTerm)) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    } catch (error) {
+        console.warn('Error in searchInCardNumber:', error);
+        return false;
+    }
+}
+
+function clearHistorySearch() {
+    const searchInput = document.getElementById('history-search');
+    if (searchInput) {
+        searchInput.value = '';
+        filterHistory();
+        searchInput.focus();
+    }
+}
+
+function updateSearchClearButton() {
+    const searchInput = document.getElementById('history-search');
+    const clearBtn = document.querySelector('.search-clear-btn');
+    
+    if (searchInput && clearBtn) {
+        if (searchInput.value.trim()) {
+            clearBtn.style.display = 'flex';
+        } else {
+            clearBtn.style.display = 'none';
+        }
     }
 }
 
