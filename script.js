@@ -1,15 +1,7 @@
 
 let currentAction = '';
 let processedCount = 0;
-let sessionHistory = [];
 let isDarkMode = false;
-let currentStats = {
-    totalProcessed: 0,
-    sessionsCount: 0,
-    averagePerSession: 0,
-    errorCount: 0,
-    lastUsed: null
-};
 
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -24,33 +16,15 @@ function initializeApp() {
     setupEventListeners();
     checkPWAInstall();
     
-    checkAndShowForceButton();
-    
     setInterval(updateStatus, 1000);
     
     initializeTooltips();
     
     loadUserPreferences();
-}
-
-function checkAndShowForceButton() {
-    const isSecureContext = window.isSecureContext || 
-                           location.protocol === 'https:' || 
-                           location.hostname === 'localhost' || 
-                           location.hostname === '127.0.0.1' ||
-                           location.hostname === '0.0.0.0' ||
-                           location.hostname.endsWith('.local') ||
-                           location.hostname.includes('192.168.') ||
-                           location.hostname.includes('10.0.') ||
-                           location.hostname.includes('172.') ||
-                           location.port;
     
-    const forceBtn = document.getElementById('force-scanner-btn');
+    initializeMobileInterface();
     
-    if (!isSecureContext && forceBtn) {
-        forceBtn.style.display = 'inline-flex';
-        console.log('Development force button enabled for insecure context');
-    }
+    initializeMobileGestures();
 }
 
 
@@ -70,11 +44,15 @@ function loadUserPreferences() {
         if (preferences) {
             const prefs = JSON.parse(preferences);
             if (prefs.darkMode) {
-                toggleDarkMode();
+                isDarkMode = true;
+                document.body.classList.add('dark-theme');
+                const themeIcon = document.getElementById('theme-icon');
+                if (themeIcon) {
+                    themeIcon.className = 'fas fa-sun';
+                }
             }
         }
     } catch (e) {
-        console.log('Failed to load preferences');
     }
 }
 
@@ -87,7 +65,6 @@ function saveUserPreferences() {
         };
         localStorage.setItem('galileo-preferences', JSON.stringify(preferences));
     } catch (e) {
-        console.log('Failed to save preferences');
     }
 }
 
@@ -124,7 +101,6 @@ function saveStats() {
             localStorage.setItem('galileo-last-session', now.toString());
         }
     } catch (e) {
-        console.log('Failed to save stats');
     }
 }
 
@@ -406,7 +382,6 @@ function processCards() {
                     error: error.message
                 });
 
-                console.warn(`Error processing line ${index + 1}: ${error.message}`);
             }
         });
         
@@ -446,10 +421,10 @@ function processCards() {
             timestamp: Date.now(),
             duplicates: duplicates.size,
             errors: errors.length,
-
-
+            results: results
         };
         
+        history.unshift(historyEntry);
 
 
         if (history.length > 50) history.splice(50);
@@ -564,7 +539,6 @@ function pasteFromClipboard() {
                 }
             })
             .catch(err => {
-                console.warn('Clipboard access failed:', err);
                 if (err.name === 'NotAllowedError') {
                     showNotification('Доступ к буферу обмена запрещён. Используйте Ctrl+V', 'warning');
                 } else {
@@ -739,6 +713,8 @@ function showHelp() {
     const helpModal = document.getElementById('help-modal');
     const helpContent = document.querySelector('.help-content');
     
+    const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
     if (helpContent) {
         helpContent.innerHTML = `
             <div class="help-sections">
@@ -751,6 +727,7 @@ function showHelp() {
                         <li><strong>Декодер:</strong> Конвертирует HEX обратно в DEC</li>
                     </ul>
                 </div>
+                ${!isMobile ? `
                 <div class="help-section">
                     <h3><i class="fas fa-keyboard"></i> Горячие клавиши</h3>
                     <div class="shortcuts">
@@ -761,6 +738,18 @@ function showHelp() {
                         <div class="shortcut"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> - Обработать</div>
                     </div>
                 </div>
+                ` : `
+                <div class="help-section">
+                    <h3><i class="fas fa-mobile-alt"></i> Управление на мобильном</h3>
+                    <div class="mobile-tips">
+                        <div class="mobile-tip">📱 Тап на кнопку - быстрый доступ</div>
+                        <div class="mobile-tip">✋ Долгий тап - копировать результат</div>
+                        <div class="mobile-tip">👆 Свайп ← - удалить запись</div>
+                        <div class="mobile-tip">🔄 Потянуть ↓ - обновить</div>
+                        <div class="mobile-tip">📋 "Вставить" - быстрый ввод</div>
+                    </div>
+                </div>
+                `}
                 <div class="help-section">
                     <h3><i class="fas fa-file-alt"></i> Форматы данных</h3>
                     <p><strong>Для добавления/удаления:</strong> Десятичные номера (123456)</p>
@@ -774,12 +763,12 @@ function showHelp() {
                 </div>
                 <div class="help-section">
                     <h3><i class="fas fa-download"></i> Установка приложения</h3>
-                    <p>Установите приложение на рабочий стол для быстрого доступа без браузера.</p>
+                    <p>Установите приложение на ${isMobile ? 'главный экран' : 'рабочий стол'} для быстрого доступа без браузера.</p>
                     <div class="pwa-install-section">
                         <div class="pwa-install-info">
                             <p><strong>Преимущества установки:</strong></p>
                             <ul>
-                                <li>Быстрый запуск с рабочего стола</li>
+                                <li>Быстрый запуск с ${isMobile ? 'главного экрана' : 'рабочего стола'}</li>
                                 <li>Работа без браузера</li>
                                 <li>Офлайн доступ к функциям</li>
                                 <li>Уведомления о статусе операций</li>
@@ -917,7 +906,7 @@ function showHistory() {
                 const hasMoreResults = item.results && item.results.length > 3;
                 
                 return `
-                    <div class="history-item enhanced">
+                    <div class="history-item enhanced" data-history-id="${item.id}">
                         <div class="history-header">
                             <div class="history-main-info">
                                 <span class="history-action">${actionNames[item.action] || item.action}</span>
@@ -974,6 +963,10 @@ function showHistory() {
     if (historyModal) {
         historyModal.style.display = 'flex';
         historyModal.classList.add('show');
+        
+        setTimeout(() => {
+            addHistorySwipeListeners();
+        }, 100);
     }
 }
 
@@ -1584,13 +1577,6 @@ function checkPWAInstall() {
     };
 }
 
-function hidePWABanner() {
-    const pwaBanner = document.getElementById('pwa-banner');
-    if (pwaBanner) {
-        pwaBanner.style.display = 'none';
-    }
-}
-
 function tryInstallPWA() {
     const installBtn = document.getElementById('install-pwa-btn');
     const instructionsDiv = document.getElementById('install-instructions');
@@ -1618,62 +1604,230 @@ function closeModal() {
     }
 }
 
-function updateScannedItemsDisplay() {
-    const container = document.getElementById('scanned-items');
+
+function initializeMobileInterface() {
+    const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    updateFooterForDevice(isMobile);
+    
+    window.addEventListener('resize', function() {
+        const isMobileNow = window.innerWidth <= 768;
+        updateFooterForDevice(isMobileNow);
+    });
+}
+
+function updateFooterForDevice(isMobile) {
+    const footerSection = document.querySelector('.footer-section:last-child');
+    if (!footerSection) return;
+    
+    if (isMobile) {
+        footerSection.innerHTML = `
+            <h4>Жесты</h4>
+            <ul>
+                <li>📱 Тап - выбор</li>
+                <li>✋ Долгий тап - копировать</li>
+                <li>👆 Свайп ← - удалить</li>
+                <li>🔄 Потянуть ↓ - обновить</li>
+            </ul>
+        `;
+    } else {
+        footerSection.innerHTML = `
+            <h4>Горячие клавиши</h4>
+            <ul>
+                <li><kbd>Ctrl</kbd> + <kbd>1</kbd> - Добавить</li>
+                <li><kbd>Ctrl</kbd> + <kbd>2</kbd> - Удалить</li>
+                <li><kbd>Ctrl</kbd> + <kbd>3</kbd> - Декодер</li>
+                <li><kbd>Esc</kbd> - Закрыть окно</li>
+            </ul>
+        `;
+    }
+}
+
+function initializeMobileGestures() {
+    const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (!isMobile) return;
+    
+    initializeButtonSwipes();
+    
+    initializeLongPress();
+    
+    initializePullToRefresh();
+    
+    initializeHistorySwipes();
+}
+
+function initializeButtonSwipes() {
+    const actionButtons = document.querySelectorAll('.action-btn');
+    
+    actionButtons.forEach(button => {
+        let startX = 0;
+        let startY = 0;
+        
+        button.addEventListener('touchstart', function(e) {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        }, { passive: true });
+        
+        button.addEventListener('touchend', function(e) {
+            if (!e.changedTouches) return;
+            
+            const endX = e.changedTouches[0].clientX;
+            const endY = e.changedTouches[0].clientY;
+            
+            const deltaX = endX - startX;
+            const deltaY = endY - startY;
+            
+            if (deltaX > 50 && Math.abs(deltaY) < 100) {
+                e.preventDefault();
+                button.style.transform = 'translateX(10px)';
+                setTimeout(() => {
+                    button.style.transform = '';
+                    button.click();
+                }, 150);
+            }
+        }, { passive: false });
+    });
+}
+
+function initializeLongPress() {
+    let longPressTimer;
+    const longPressDuration = 800; 
+    
+    document.addEventListener('touchstart', function(e) {
+        const resultOutput = document.getElementById('result-output');
+        if (resultOutput && e.target === resultOutput) {
+            longPressTimer = setTimeout(() => {
+                if (resultOutput.value.trim()) {
+                    copyToClipboard();
+                    if (navigator.vibrate) {
+                        navigator.vibrate(100);
+                    }
+                    resultOutput.style.background = '#e6f3ff';
+                    setTimeout(() => {
+                        resultOutput.style.background = '';
+                    }, 300);
+                }
+            }, longPressDuration);
+        }
+    }, { passive: true });
+    
+    document.addEventListener('touchend', function() {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    }, { passive: true });
+    
+    document.addEventListener('touchmove', function() {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    }, { passive: true });
+}
+
+function initializePullToRefresh() {
+    let startY = 0;
+    let currentY = 0;
+    let isPulling = false;
+    const pullThreshold = 80;
+    
+    const container = document.querySelector('.container');
     if (!container) return;
     
-    container.innerHTML = '';
+    document.addEventListener('touchstart', function(e) {
+        if (window.scrollY === 0) {
+            startY = e.touches[0].clientY;
+            isPulling = false;
+        }
+    }, { passive: true });
     
-    scannedItems.forEach((item, index) => {
-        const itemElement = document.createElement('div');
-        itemElement.className = 'scanned-item';
-        itemElement.innerHTML = `
-            <div class="item-value">${item.value}</div>
-            <div class="item-time">${item.time}</div>
-            <div class="item-actions">
-                <button class="item-action" onclick="removeScannedItem(${index})" title="Удалить">
-                    <i class="fas fa-times"></i>
-                </button>
-                <button class="item-action" onclick="copyScannedItem('${item.value}')" title="Копировать">
-                    <i class="fas fa-copy"></i>
-                </button>
-            </div>
-        `;
-        container.appendChild(itemElement);
-    });
-}
-
-function removeScannedItem(index) {
-    if (index >= 0 && index < scannedItems.length) {
-        const removedItem = scannedItems.splice(index, 1)[0];
-        updateScannedItemsDisplay();
-        showNotification(`Удален: ${removedItem.value}`, 'info');
-        
-        if (scannedItems.length === 0) {
-            const historyElement = document.getElementById('scanner-history');
-            if (historyElement) {
-                historyElement.style.display = 'none';
+    document.addEventListener('touchmove', function(e) {
+        if (window.scrollY === 0 && startY) {
+            currentY = e.touches[0].clientY;
+            const pullDistance = currentY - startY;
+            
+            if (pullDistance > 0 && pullDistance < pullThreshold * 2) {
+                isPulling = true;
+                const opacity = Math.min(pullDistance / pullThreshold, 1);
+                container.style.transform = `translateY(${pullDistance * 0.3}px)`;
+                container.style.opacity = 1 - (opacity * 0.1);
             }
         }
-    }
+    }, { passive: true });
+    
+    document.addEventListener('touchend', function() {
+        if (isPulling && currentY - startY > pullThreshold) {
+            showNotification('Обновление страницы...', 'info');
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        }
+        
+        container.style.transform = '';
+        container.style.opacity = '';
+        startY = 0;
+        currentY = 0;
+        isPulling = false;
+    }, { passive: true });
 }
 
-function copyScannedItem(value) {
-    navigator.clipboard.writeText(value).then(() => {
-        showNotification(`Скопировано: ${value}`, 'success');
-    }).catch(err => {
-        console.error('Failed to copy:', err);
-        showNotification('Ошибка копирования', 'error');
+function initializeHistorySwipes() {
+}
+
+function addHistorySwipeListeners() {
+    const historyItems = document.querySelectorAll('.history-item');
+    
+    historyItems.forEach(item => {
+        let startX = 0;
+        let currentX = 0;
+        let isSwipingLeft = false;
+        
+        item.addEventListener('touchstart', function(e) {
+            startX = e.touches[0].clientX;
+            isSwipingLeft = false;
+        }, { passive: true });
+        
+        item.addEventListener('touchmove', function(e) {
+            currentX = e.touches[0].clientX;
+            const deltaX = currentX - startX;
+            
+            if (deltaX < -50) { 
+                isSwipingLeft = true;
+                item.style.transform = `translateX(${Math.max(deltaX, -100)}px)`;
+                item.style.opacity = 1 + (deltaX / 200); 
+            }
+        }, { passive: true });
+        
+        item.addEventListener('touchend', function() {
+            if (isSwipingLeft && Math.abs(currentX - startX) > 80) {
+                const itemId = item.dataset.historyId;
+                if (itemId) {
+                    item.style.transform = '';
+                    item.style.opacity = '';
+                    
+                    if (confirm('Удалить эту запись из истории?')) {
+                        item.style.transform = 'translateX(-100%)';
+                        item.style.opacity = '0';
+                        setTimeout(() => {
+                            const history = JSON.parse(localStorage.getItem('galileo-history') || '[]');
+                            const filteredHistory = history.filter(h => h.id !== itemId);
+                            localStorage.setItem('galileo-history', JSON.stringify(filteredHistory));
+                            showHistory();
+                            showNotification('Запись удалена', 'success');
+                        }, 300);
+                    }
+                }
+            } else {
+                item.style.transform = '';
+                item.style.opacity = '';
+            }
+            
+            startX = 0;
+            currentX = 0;
+            isSwipingLeft = false;
+        }, { passive: true });
     });
-}
-
-function clearScannedItems() {
-    scannedItems = [];
-    updateScannedItemsDisplay();
-    const historyElement = document.getElementById('scanner-history');
-    if (historyElement) {
-        historyElement.style.display = 'none';
-    }
-    showNotification('История сканирования очищена', 'info');
 }
 
