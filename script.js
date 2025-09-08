@@ -2502,6 +2502,7 @@ function updateFooterForDevice(isMobile) {
                 <li><kbd>Ctrl</kbd> + <kbd>1</kbd> - Добавить</li>
                 <li><kbd>Ctrl</kbd> + <kbd>2</kbd> - Удалить</li>
                 <li><kbd>Ctrl</kbd> + <kbd>3</kbd> - Декодер</li>
+                <li><kbd>Ctrl</kbd> + <kbd>4</kbd> - Работа с лимитными картами</li>
                 <li><kbd>Ctrl</kbd> + <kbd>Enter</kbd> - Обработать</li>
                 <li><kbd>Esc</kbd> - Закрыть окно</li>
             </ul>
