@@ -851,7 +851,7 @@ function saveToFile() {
 
                 const jsonData = {
                     exportDate: now.toISOString(),
-                    action: currentAction,
+                    action: currentAction || 'export',
                     totalCards: lines.length,
                     results: lines.map((line, index) => ({
                         id: index + 1,
@@ -860,7 +860,7 @@ function saveToFile() {
                     }))
                 };
                 content = JSON.stringify(jsonData, null, 2);
-                filename = `${dateStr}_${timeStr}_${currentAction}_cards.json`;
+                filename = `${dateStr}_${timeStr}_${currentAction || 'export'}_cards.json`;
                 mimeType = 'application/json';
                 break;
                 
@@ -868,16 +868,17 @@ function saveToFile() {
 
                 const csvHeader = 'ID,Content,Action,Timestamp\n';
                 const csvRows = lines.map((line, index) => 
-                    `${index + 1},"${line.trim().replace(/"/g, '""')}",${currentAction},"${now.toISOString()}"`
+                    `${index + 1},"${line.trim().replace(/"/g, '""')}",${currentAction || 'export'},"${now.toISOString()}"`
                 ).join('\n');
                 content = csvHeader + csvRows;
-                filename = `${dateStr}_${timeStr}_${currentAction}_cards.csv`;
+                filename = `${dateStr}_${timeStr}_${currentAction || 'export'}_cards.csv`;
                 mimeType = 'text/csv';
                 break;
                 
-
+            case 'txt':
+            default:
                 content = data;
-                filename = `${dateStr}_${timeStr}_${currentAction}_cards.txt`;
+                filename = `${dateStr}_${timeStr}_${currentAction || 'export'}_cards.txt`;
                 mimeType = 'text/plain';
         }
         
@@ -1836,7 +1837,7 @@ function downloadHistoryItem(itemId) {
             'ADD': 'ADD',
             'DELETE': 'DEL', 
             'DECODE': 'DEC'
-        }[item.action] || item.action;
+        }[item.action] || item.action || 'export';
         
         const filename = `${dateStr}_${timeStr}_${actionName}_${item.count}cards.txt`;
         
