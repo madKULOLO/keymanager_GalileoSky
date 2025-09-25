@@ -205,9 +205,9 @@ function updateStatus() {
     
 
     const countElement = document.getElementById('processed-count');
-    if (countElement) {
-        countElement.textContent = `Обработано: ${getProcessedCount()}`;
-    }
+    const history = JSON.parse(localStorage.getItem('galileo-history') || '[]');
+    const errorCount = history.reduce((total, entry) => total + (entry.errors || 0), 0);
+    countElement.textContent = `Обработано: ${getProcessedCount()} | Ошибок: ${errorCount}`;
 }
 
 
@@ -2284,7 +2284,7 @@ function startQrScanner() {
         .then(devices => {
             const videoDevices = devices.filter(device => device.kind === 'videoinput');
             
-            addCameraControls(videoDevices);
+            // addCameraControls(videoDevices);
             
             let selectedDevice = null;
             
