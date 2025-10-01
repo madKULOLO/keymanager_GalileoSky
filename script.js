@@ -2294,70 +2294,80 @@ function startQrScanner() {
     navigator.mediaDevices.enumerateDevices()
         .then(devices => {
             const videoDevices = devices.filter(device => device.kind === 'videoinput');
-            
-            // addCameraControls(videoDevices);
-            
             let selectedDevice = null;
-            
-            const environmentCameras = videoDevices.filter(device => 
-                device.label.toLowerCase().includes('environment') ||
-                device.label.toLowerCase().includes('back') ||
-                device.label.toLowerCase().includes('rear')
+            const environmentCameras = videoDevices.filter(device =>
+                /environment|back|rear/i.test(device.label)
             );
-            
-            const focusEnvironmentCameras = environmentCameras.filter(device => 
-                device.label.toLowerCase().includes('focus') || 
-                device.label.toLowerCase().includes('macro') ||
-                device.label.toLowerCase().includes('normal') ||
-                device.label.toLowerCase().includes('standard')
-            );
-            
-            if (focusEnvironmentCameras.length > 0) {
-                selectedDevice = focusEnvironmentCameras[0];
-            } else if (environmentCameras.length > 0) {
+            if (environmentCameras.length > 0) {
                 selectedDevice = environmentCameras[0];
-            } else {
-                const focusCameras = videoDevices.filter(device => 
-                    device.label.toLowerCase().includes('focus') || 
-                    device.label.toLowerCase().includes('macro') ||
-                    device.label.toLowerCase().includes('normal') ||
-                    device.label.toLowerCase().includes('standard')
-                );
-                
-                if (focusCameras.length > 0) {
-                    selectedDevice = focusCameras[0];
-                } else if (videoDevices.length > 0) {
-                    selectedDevice = videoDevices[0];
-                }
+            } else if (videoDevices.length > 0) {
+                selectedDevice = videoDevices[0];
             }
-            
+
+            let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             let cameraConfig;
-            if (selectedDevice) {
+            if (isIOS) {
+                cameraConfig = { facingMode: { exact: 'environment' } };
+            } else if (selectedDevice) {
                 cameraConfig = { deviceId: { exact: selectedDevice.deviceId } };
             } else {
-                cameraConfig = { facingMode: "environment" };
+                cameraConfig = { facingMode: 'environment' };
             }
-            
+
             return html5QrCode.start(
                 cameraConfig,
                 config,
                 (decodedText, decodedResult) => {
                     handleQrScanResult(decodedText);
                 },
-                (errorMessage) => {
-                    
+                async (errorMessage) => {
+                    if (window.Tesseract && window.tesseractLoaded) {
+                        try {
+                            const video = document.querySelector('#qr-reader video');
+                            if (video) {
+                                const canvas = document.createElement('canvas');
+                                canvas.width = video.videoWidth;
+                                canvas.height = video.videoHeight;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                                const { data: { text } } = await Tesseract.recognize(canvas, 'eng', { tessedit_char_whitelist: '0123456789' });
+                                const digits = text.replace(/\D/g, '');
+                                if (digits.length >= 4) {
+                                    handleQrScanResult(digits);
+                                    showNotification('Распознаны цифры с камеры: ' + digits, 'success');
+                                }
+                            }
+                        } catch (ocrErr) {}
+                    }
                 }
             );
         })
         .catch(err => {
             return html5QrCode.start(
-                { facingMode: "environment" },
+                { facingMode: 'environment' },
                 config,
                 (decodedText, decodedResult) => {
                     handleQrScanResult(decodedText);
                 },
-                (errorMessage) => {
-                    
+                async (errorMessage) => {
+                    if (window.Tesseract && window.tesseractLoaded) {
+                        try {
+                            const video = document.querySelector('#qr-reader video');
+                            if (video) {
+                                const canvas = document.createElement('canvas');
+                                canvas.width = video.videoWidth;
+                                canvas.height = video.videoHeight;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                                const { data: { text } } = await Tesseract.recognize(canvas, 'eng', { tessedit_char_whitelist: '0123456789' });
+                                const digits = text.replace(/\D/g, '');
+                                if (digits.length >= 4) {
+                                    handleQrScanResult(digits);
+                                    showNotification('Распознаны цифры с камеры: ' + digits, 'success');
+                                }
+                            }
+                        } catch (ocrErr) {}
+                    }
                 }
             );
         })
