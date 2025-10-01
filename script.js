@@ -53,6 +53,13 @@ function initializeApp() {
     } catch (e) {
         sessionIntervals = [];
     }
+        try {
+            const allHistory = JSON.parse(localStorage.getItem('galileo-history') || '[]');
+            const totalErrors = allHistory.reduce((sum, entry) => sum + (entry.errors || 0), 0);
+            localStorage.setItem('galileo-errors', totalErrors);
+        } catch (e) {
+            localStorage.setItem('galileo-errors', '0');
+        }
 }
 
 function saveStats() {
@@ -651,15 +658,19 @@ function processCards() {
             totalProcessed: results.length,
             fileSize: Math.ceil(results.join('\n').length / 1024)
         });
-        
+
+        const allHistory = JSON.parse(localStorage.getItem('galileo-history') || '[]');
+        const totalErrors = allHistory.reduce((sum, entry) => sum + (entry.errors || 0), 0);
+        localStorage.setItem('galileo-errors', totalErrors);
+
         closeModal();
-        
+
         const successMessage = errors.length > 0 
             ? `Обработка завершена! Успешно: ${results.length} карт, пропущено: ${errors.length} за ${processingTime}мс`
             : `Обработка завершена! Обработано: ${results.length} карт за ${processingTime}мс`;
-            
-        showNotification(successMessage, 'success');
         
+        showNotification(successMessage, 'success');
+
     } catch (error) {
         showNotification(`Критическая ошибка: ${error.message}`, 'error');
     } finally {
@@ -2264,19 +2275,19 @@ function startQrScanner() {
         formatsToSupport: [
             Html5QrcodeSupportedFormats.QR_CODE,
             Html5QrcodeSupportedFormats.CODE_128,
-            // Html5QrcodeSupportedFormats.CODE_39,
-            // Html5QrcodeSupportedFormats.CODE_93,
-            // Html5QrcodeSupportedFormats.EAN_13,
-            // Html5QrcodeSupportedFormats.EAN_8,
-            // Html5QrcodeSupportedFormats.UPC_A,
-            // Html5QrcodeSupportedFormats.UPC_E,
-            // Html5QrcodeSupportedFormats.ITF,
-            // Html5QrcodeSupportedFormats.MAXICODE,
-            // Html5QrcodeSupportedFormats.RSS_14,
-            // Html5QrcodeSupportedFormats.RSS_EXPANDED,
-            // Html5QrcodeSupportedFormats.PDF_417,
-            // Html5QrcodeSupportedFormats.AZTEC,
-            // Html5QrcodeSupportedFormats.DATA_MATRIX
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.CODE_93,
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.ITF,
+            Html5QrcodeSupportedFormats.MAXICODE,
+            Html5QrcodeSupportedFormats.RSS_14,
+            Html5QrcodeSupportedFormats.RSS_EXPANDED,
+            Html5QrcodeSupportedFormats.PDF_417,
+            Html5QrcodeSupportedFormats.AZTEC,
+            Html5QrcodeSupportedFormats.DATA_MATRIX
         ]
     };
 
