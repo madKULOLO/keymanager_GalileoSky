@@ -854,9 +854,27 @@ function saveToFile() {
         const now = new Date();
         const dateStr = now.toISOString().slice(0, 10);
         const timeStr = now.toTimeString().slice(0, 5).replace(':', '-');
-        
+
+        let actionName = currentAction || 'export';
+        if (actionName === 'CARD_LIMIT') {
+            const addLimitCard = document.getElementById('add-limit-card')?.checked || false;
+            const delLimitCard = document.getElementById('del-limit-card')?.checked || false;
+            const addIdentCard = document.getElementById('add-ident-card')?.checked || false;
+            const delIdentCard = document.getElementById('del-ident-card')?.checked || false;
+            const dualIdent = document.getElementById('dual-ident')?.checked || false;
+
+            const parts = [];
+            if (addLimitCard) parts.push('add_limit_card');
+            if (delLimitCard) parts.push('del_limit_card');
+            if (addIdentCard) parts.push('add_ident_card');
+            if (delIdentCard) parts.push('del_ident_card');
+            if (dualIdent) parts.push('dual_ident');
+
+            actionName = parts.length ? parts.join('+') : 'CARD_LIMIT';
+        }
+
         let content, filename, mimeType;
-        
+
         switch(selectedFormat) {
             case 'json':
 
@@ -871,7 +889,7 @@ function saveToFile() {
                     }))
                 };
                 content = JSON.stringify(jsonData, null, 2);
-                filename = `${dateStr}_${timeStr}_${currentAction || 'export'}_cards.json`;
+                filename = `${dateStr}_${timeStr}_${actionName}_cards.json`;
                 mimeType = 'application/json';
                 break;
                 
@@ -882,14 +900,14 @@ function saveToFile() {
                     `${index + 1},"${line.trim().replace(/"/g, '""')}",${currentAction || 'export'},"${now.toISOString()}"`
                 ).join('\n');
                 content = csvHeader + csvRows;
-                filename = `${dateStr}_${timeStr}_${currentAction || 'export'}_cards.csv`;
+                filename = `${dateStr}_${timeStr}_${actionName}_cards.csv`;
                 mimeType = 'text/csv';
                 break;
                 
             case 'txt':
             default:
                 content = data;
-                filename = `${dateStr}_${timeStr}_${currentAction || 'export'}_cards.txt`;
+        filename = `${dateStr}_${timeStr}_${actionName}_cards.txt`;
                 mimeType = 'text/plain';
         }
         
