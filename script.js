@@ -26,7 +26,7 @@ function initializeApp() {
     loadStats();
     updateStatus();
     setupEventListeners();
-    checkPWAInstall();
+    // checkPWAInstall();
     
     setInterval(updateStatus, 1000);
     
@@ -1043,6 +1043,7 @@ function showHelp() {
                     </ul>
                     <p>При обработке одной карты вручную требуется в среднем ~15 секунд. Дедова система позволяет обработать миллесекундно, значительно экономя ваше время.</p>
                 </div>
+                <!--
                 <div class="help-section">
                     <h3><i class="fas fa-download"></i> Установка приложения</h3>
                     <p>Установите приложение на ${isMobile ? 'главный экран' : 'рабочий стол'} для быстрого доступа без браузера.</p>
@@ -1066,6 +1067,7 @@ function showHelp() {
                         </div>
                     </div>
                 </div>
+                -->
             </div>
         `;
     }
@@ -2123,6 +2125,7 @@ function importHistory() {
 }
 
 
+ /*
 function checkPWAInstall() {
     let deferredPrompt;
     
@@ -2162,7 +2165,7 @@ function tryInstallPWA() {
         showNotification('Для установки используйте меню браузера: "Установить приложение"', 'info');
     }
 }
-
+*/
 
 function openQrScanner() {
     const scannerModal = document.getElementById('qr-scanner-modal');
